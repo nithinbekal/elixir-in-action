@@ -1,16 +1,18 @@
 defmodule Todo.Server do
   use GenServer
 
-  def start do
-    GenServer.start(__MODULE__, nil)
+  def start(name) do
+    GenServer.start(__MODULE__, name)
   end
 
-  def init(_) do
-    {:ok, Todo.List.new}
+  def init(name) do
+    {:ok, {name, Todo.List.new}}
   end
 
-  def handle_cast({:add_entry, new_entry}, todo_list) do
-    {:noreply, Todo.List.add_entry(todo_list, new_entry)}
+  def handle_cast({:add_entry, new_entry}, {name, todo_list}) do
+    new_state = Todo.List.add_entry(todo_list, new_entry)
+    Todo.Database.store(name, new_state)
+    {:noreply, {name, new_state}}
   end
 
   def handle_call({:entries, date}, _, todo_list) do
