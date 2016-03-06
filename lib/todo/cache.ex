@@ -11,17 +11,17 @@ defmodule Todo.Cache do
 
   def init(_) do
     Todo.Database.start("./persist/")
-    {:ok, HashDict.new}
+    {:ok, Map.new}
   end
 
   def handle_call({:server_process, todo_list_name}, _, todo_servers) do
-    case HashDict.fetch(todo_servers, todo_list_name) do
+    case Map.fetch(todo_servers, todo_list_name) do
       {:ok, todo_server} ->
         {:reply, todo_server, todo_servers}
 
       :error ->
         {:ok, new_server} = Todo.Server.start(todo_list_name)
-        servers = HashDict.put(todo_servers, todo_list_name, new_server)
+        servers = Map.put(todo_servers, todo_list_name, new_server)
 
         {:reply, new_server, servers}
     end
