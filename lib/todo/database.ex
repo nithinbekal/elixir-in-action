@@ -1,7 +1,7 @@
 defmodule Todo.Database do
   use GenServer
 
-  def start(db_folder) do
+  def start_link(db_folder) do
     GenServer.start(__MODULE__, db_folder, name: :database_server)
   end
 
@@ -32,7 +32,7 @@ defmodule Todo.Database do
 
   defp start_workers(db_folder) do
     for index <- 1..3, into: HashDict.new do
-      {:ok, pid} = Todo.DatabaseWorker.start(db_folder)
+      {:ok, pid} = Todo.DatabaseWorker.start_link(db_folder)
       {index-1, pid}
     end
   end
