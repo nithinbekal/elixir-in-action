@@ -2,7 +2,7 @@ defmodule Todo.Cache do
   use GenServer
 
   def start_link do
-    IO.puts("Starting cache...")
+    IO.puts("Starting cache")
     GenServer.start(__MODULE__, nil, name: :todo_cache)
   end
 
@@ -21,7 +21,7 @@ defmodule Todo.Cache do
         {:reply, todo_server, todo_servers}
 
       :error ->
-        {:ok, new_server} = Todo.Server.start(todo_list_name)
+        {:ok, new_server} = Todo.Server.start_link(todo_list_name)
         servers = Map.put(todo_servers, todo_list_name, new_server)
 
         {:reply, new_server, servers}
