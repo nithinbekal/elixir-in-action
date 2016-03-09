@@ -3,7 +3,6 @@ defmodule TodoTest do
   doctest Todo
 
   test "it works" do
-    {:ok, cache} = Todo.Supervisor.start_link()
     bobs_list = Todo.Cache.server_process("bobs_list")
     Todo.Server.clear(bobs_list)
     Todo.Server.add_entry(bobs_list, %{date: {2013, 12, 19}, title: "Dentist"})
