@@ -8,10 +8,6 @@ defmodule Todo.ProcessRegistry do
     GenServer.start_link(__MODULE__, nil, name: :process_registry)
   end
 
-  def init(_) do
-    {:ok, Map.new}
-  end
-
   def register_name(key, pid) do
     GenServer.call(:process_registry, {:register_name, key, pid})
   end
@@ -21,7 +17,10 @@ defmodule Todo.ProcessRegistry do
   end
 
   def whereis_name(key) do
-    GenServer.call(:process_registry, {:whereis_name, key})
+    case :ets.lookup(:todo_process_registry, key) do
+      [{^key, pid}] -> pid
+      _ -> :undefined
+    end
   end
 
   def send(key, message) do
@@ -34,39 +33,29 @@ defmodule Todo.ProcessRegistry do
     end
   end
 
-  def handle_call({:register_name, key, pid}, _caller, process_registry) do
-    case Map.get(process_registry, key) do
-      nil ->
+  def init(_) do
+    :ets.new(:todo_process_registry, [:named_table, :protected, :set])
+    {:ok, nil}
+  end
+
+  def handle_call({:register_name, key, pid}, _caller, state) do
+    case whereis_name(key) do
+      :undefined ->
         Process.monitor(pid)
-        new_registry = Map.put(process_registry, key, pid)
+        :ets.insert(:todo_process_registry, {key, pid})
+        {:reply, :yes, state}
 
-        {:reply, :yes, new_registry}
-
-      _ ->
-        {:reply, :no, process_registry}
+      _ -> {:reply, :no, state}
     end
   end
 
-  def handle_call({:whereis_name, key}, _caller, process_registry) do
-    name = Map.get(process_registry, key, :undefined)
-    {:reply, name, process_registry}
+  def handle_call(:process_registry, {:unregister_name, key}, _caller, state) do
+    :ets.delete(:todo_process_registry, key)
+    {:noreply, state}
   end
 
-  def handle_info({:DOWN, _, :process, pid, _}, process_registry) do
-    {:noreply, deregister_pid(process_registry, pid)}
-  end
-
-  def deregister_pid(process_registry, pid) do
-    Enum.reduce(
-      process_registry,
-      process_registry,
-      fn
-        ({reg_alias, proc}, acc) when proc == pid ->
-          Map.delete(acc, reg_alias)
-
-        (_any, acc) ->
-          acc
-      end
-    )
+  def handle_info({:DOWN, _, :process, terminated_pid, _}, state) do
+    :ets.match_delete(:todo_process_registry, {:_, terminated_pid})
+    {:noreply, state}
   end
 end
