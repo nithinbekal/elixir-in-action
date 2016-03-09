@@ -13,6 +13,7 @@ defmodule Todo.Supervisor do
     [
       worker(Todo.ProcessRegistry, []),
       supervisor(Todo.Database, ["./persist"]),
+      supervisor(Todo.ServerSupervisor, []),
       worker(Todo.Cache, [])
     ]
   end
